@@ -605,6 +605,244 @@ fluidRow(
   tags$head(tags$style(".butt{background-color:#add8e6;} .butt{color: #337ab7;}"))  
   )
   )
+
+
+###################################################################
+###                                                             ###
+###                                                             ###
+### Run DMU                                                     ###
+###                                                             ###
+###                                                             ###
+###                                                             ###
+###################################################################
+
+Run_dmu_tab<-tabItem(
+ tabName ="run_dmu",
+   
+  #默认参数  
+  fluidRow(
+  box( 
+  title = "Default parameters", height=300,
+      closable = FALSE,  #是否可移除
+      width = 4,
+      status ="warning", 
+	 background = "gray",
+	 solidHeader = TRUE,
+      collapsed=TRUE,     #保持折叠
+      collapsible = TRUE, #可以折叠或者显示
+     numericInput("dmu_missing_value","Missing value in phenotype",-9999),
+     numericInput("dmu_iteration_criteria", "Threshold of convergence",value = 1.0e-7),
+     numericInput("dmu_SSBLUP_omega", "SSBLUP omega",value =0.05)
+
+  ),
+  box( 
+  title = "Default parameters", height=300,
+      closable = FALSE, 
+      width = 4,
+      status ="warning", 
+	 background = "gray",
+      solidHeader = TRUE, 
+      collapsed=TRUE,     #保持折叠
+      collapsible = TRUE, #可以折叠或者显示
+	 textInput("dmu_genetic_effect_name", "Genetic effect name","Id"),   
+      textInput("dmu_prior_path", "File path of PRIOR information"), 
+      textInput("dmu_prior_name", "File name of PRIOR information")   
+  ),
+  box( 
+  title = "Default parameters", height=300,
+      closable = FALSE, 
+      width = 4,
+      status ="warning", 
+	 background = "gray",
+      solidHeader = TRUE, 
+      collapsed=TRUE,     #保持折叠
+      collapsible = TRUE, #可以折叠或者显示
+      numericInput("dmu_dmu_algorithm_code", "DMU algorithm code",value =1),
+      selectInput("dmu_included_permanent_effect", "Include permanent effect?",c("No","Yes")),
+      selectInput("dmu_included_dominance_effect", "Include dominance effect?",c("No","Yes"))
+  )
+), 
+  #核心参数 
+  fluidRow(
+  box( 
+  title = "Parameters set 1", height=300,
+      closable = FALSE, 
+      width = 4,
+      status ="warning", 
+	 background = "olive",
+      solidHeader = TRUE, 
+      collapsible = TRUE, #可以折叠或者显示
+     numericInput("dmu_trait_n","Number of trait",1),
+     numericInput("dmu_integer_n", "Number of integer variable", value = 4),
+	fileInput("dmu_phe","Upload phenotype!(with colnames)")  
+  ),
+ box(
+  title = "Parameters set 2", height=300,
+      closable = FALSE, 
+      width = 4,
+      status ="warning", 
+	 background = "olive",
+      solidHeader = TRUE, 
+      collapsible = TRUE, #可以折叠或者显示
+  selectInput("dmu_genotype_data_type", "Genotype data type",c("Plink","Hapmap","BLUPF90","VCF","Numeric")),	 
+  fileInput("dmu_genotype_data","Upload genotype!"),
+  fileInput("dmu_pedigree","Upload pedigree!")
+  ), 
+  box(
+  title = "Parameters set 3", height=300,
+      closable = FALSE, 
+      width = 4,
+      status ="warning", 
+	 background = "olive",
+      solidHeader = TRUE, 
+      collapsible = TRUE, #可以折叠或者显示
+   textInput("dmu_relationship_name", "File name of relationship data"),  
+   selectInput("dmu_dmu_module", "DMU module",c("dmuai","dmu4","dmu5")),
+   selectInput("dmu_analysis_model", "DMU analysis model",c("PBLUP_A","GBLUP_A","SSBLUP_A","User_define"))
+  )),  
+  uiOutput("run_dmu_dynamic"),
+        actionButton(
+          inputId = "run_dmu_button",
+          label = "Run DMU",
+          icon = icon("users"),
+          width = NULL,
+          status = "primary",
+          style = "margin: auto"
+        ), 
+fluidRow(
+   column(width=12,
+  mainPanel(verbatimTextOutput("run_dmu_console"))
+  ) 
+ ),		
+ fluidRow(
+  downloadButton("download_ebv_dmu", "Download EBV", class="butt",style = "width:33%"),
+  tags$head(tags$style(".butt{background-color:#add8e6;} .butt{color: #337ab7;}")) #  font color
+  ),  		
+  dataTableOutput("run_dmu_dir_result")
+ 
+)  
+
+
+
+###################################################################
+###                                                             ###
+###                                                             ###
+### Run BLUPF90                                                 ###
+###                                                             ###
+###                                                             ###
+###                                                             ###
+###################################################################
+
+RUN_blupf90_tab<- tabItem(
+ tabName ="run_blupf90",
+ 
+#默认参数  
+  fluidRow(
+  box( 
+  title = "Default parameters", height=300,
+      closable = FALSE,  #是否可移除
+      width = 4,
+      status ="warning", 
+	 background = "gray",
+	 solidHeader = TRUE,
+      collapsed=TRUE,     #保持折叠
+      collapsible = TRUE, #可以折叠或者显示
+     numericInput("blupf90_missing_value","Missing value in phenotype",-9999),
+     numericInput("blupf90_iteration_criteria", "Threshold of convergence",value = 1.0e-7),
+     numericInput("blupf90_SSBLUP_omega", "SSBLUP omega",value =0.05)
+
+  ),
+  box( 
+  title = "Default parameters", height=300,
+      closable = FALSE, 
+      width = 4,
+      status ="warning", 
+	 background = "gray",
+      solidHeader = TRUE, 
+      collapsed=TRUE,     #保持折叠
+      collapsible = TRUE, #可以折叠或者显示
+	 textInput("blupf90_genetic_effect_name", "Genetic effect name","Id"),   
+      textInput("blupf90_prior_path", "File path of PRIOR information"), 
+      textInput("blupf90_prior_name", "File name of PRIOR information")   
+  ),
+  box( 
+  title = "Default parameters", height=300,
+      closable = FALSE, 
+      width = 4,
+      status ="warning", 
+	 background = "gray",
+      solidHeader = TRUE, 
+      collapsed=TRUE,     #保持折叠
+      collapsible = TRUE, #可以折叠或者显示
+      selectInput("blupf90_included_permanent_effect", "Include permanent effect?",c("No","Yes")),
+      selectInput("blupf90_included_dominance_effect", "Include dominance effect?",c("No","Yes"))
+  )
+),
+
+  fluidRow(
+  box(
+  title = "Basic information", height=350,
+      closable = TRUE, 
+      width = 4,
+      status ="warning", 
+	 background = "gray",
+      solidHeader = TRUE, 
+      collapsible = TRUE, #可以折叠或者显示
+  numericInput("run_blupf90_trait_n","Number of trait",1),
+	fileInput("run_blupf90_phenotype","Upload phenotype data(with colnames)!"),
+	fileInput("run_blupf90_pedigree","Upload pedigree data!")	
+  ),
+ box(
+  title = "File path and name", height=350,
+      closable = TRUE, 
+      width = 4,
+      status ="warning", 
+	 background = "secondary",
+      solidHeader = TRUE, 
+      collapsible = TRUE, #可以折叠或者显示
+  textInput("run_blupf90_relationship_path", "Kingship file path"),   
+  textInput("run_blupf90_phe_path", "Phenotype file path"),  
+  textInput("run_blupf90_phe_name", "Phenotype file name")
+  ), 
+  box(
+  title = "Blupf90 parameter", height=350,
+      closable = TRUE, 
+      width = 4,
+      status ="warning", 
+	 background = "olive",
+      solidHeader = TRUE, 
+      collapsible = TRUE, #可以折叠或者显示
+  radioButtons("run_blupf90_algorithm", "BLUPF90 module", c("AI_REML","EM_REML","BLUPF90"),selected="AI_REML"),
+  radioButtons("run_blupf90_method","Analysis method",c("PBLUP_A","SSBLUP_A"),selected="PBLUP_A"),
+  radioButtons("run_blupf90_given_prior_logic", "Provide PRIOR?", c("YES","NO"),selected="NO")
+  )),  
+  uiOutput("run_blupf90_given_prior_dynamic"), 
+  uiOutput("run_blupf90_dynamic"),
+   actionButton(
+  inputId = "run_blupf90_Button",
+  label = "Run BLUPF90",
+  icon = icon("users"),
+  width = NULL,
+  status = "primary",
+  style = "margin: auto"
+        ), 
+fluidRow(
+   column(width=12,
+  mainPanel(verbatimTextOutput("run_blupf90_console"))
+  ) 
+ ),		
+ fluidRow(
+  downloadButton("download_ebv_blupf90", "Download EBV", class="butt",style = "width:33%"),
+  tags$head(tags$style(".butt{background-color:#add8e6;} .butt{color: #337ab7;}")) #  font color
+  ),   
+  dataTableOutput("run_blupf90_result")
+
+	)
+
+
+
+
+
  
 #src="https://qsmei-markdown.oss-cn-shanghai.aliyuncs.com/markdown-img/20210318215728.png"
   ui = dashboardPage(
@@ -624,6 +862,7 @@ fluidRow(
       skin = "light",
       status = "primary",
       id = "sidebar",
+	  #width = 600,
       sidebarUserPanel(
         #image = "https://qsmei-markdown.oss-cn-shanghai.aliyuncs.com/markdown-img/20210318215728.png",
         name = "Focus on genetic analysis!"
@@ -691,7 +930,21 @@ fluidRow(
             ),
             tabName = "H_matrix"
           )		  
-        )		
+        ),
+        menuItem(
+          "Evaluation - DMU",
+          badgeLabel = "",
+          badgeColor = "success",
+          tabName = "run_dmu",
+          icon = icon("laptop-code")
+        ),
+        menuItem(
+          "Evaluation - BLUPF90",
+          badgeLabel = "",
+          badgeColor = "success",
+          tabName = "run_blupf90",
+          icon = icon("laptop-code")
+        )			
       )
     ),
     body = dashboardBody(
@@ -701,7 +954,9 @@ fluidRow(
 	  QC_imputation_tab,
 	   P_tab,
 	   G_tab,
-	   H_tab
+	   H_tab,
+	   Run_dmu_tab,
+	   RUN_blupf90_tab
       )
     ),
     controlbar = dashboardControlbar(

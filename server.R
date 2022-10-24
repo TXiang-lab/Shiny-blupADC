@@ -1865,6 +1865,368 @@ if(!is.null(kinship_result$H_A$A)){individual_id=rownames(kinship_result$H_A$A)
  })
 
  
+
+###################################################################
+###                                                             ###
+###                                                             ###
+###  Run DMU                                                    ###
+###                                                             ###
+###                                                             ###
+###                                                             ###
+###################################################################
+trait_effect=c("Trait_name","Fixed_effect_name","Random_effect_name","Covariate_effect_name")
+default_path=getwd()
+dmu_path=paste0(default_path,"/run_DMU")
+if(!file.exists(dmu_path))dir.create(dmu_path,recursive=TRUE)
+
+
+	#读取表型数据和系谱数据
+
+
+dmu_phe <- reactive({
+    req(input$dmu_phe)
+    data.table::fread(input$dmu_phe$datapath,data.table=F,header=TRUE)
+  })
+
+dmu_pedigree <- reactive({
+    req(input$dmu_pedigree)
+    data.table::fread(input$dmu_pedigree$datapath,data.table=F,header=TRUE)
+  })
+
+	#写出输入的数据
+
+observeEvent(input$dmu_phe,{
+data.table::fwrite(dmu_phe(),paste0(dmu_path,"/phe.txt"),quote=F,row.names=F,col.names=F,sep=" ")
+}) 
+
+observeEvent(input$dmu_pedigree,{
+data.table::fwrite(dmu_pedigree(),paste0(dmu_path,"/pedigree.txt"),quote=F,row.names=F,col.names=F,sep=" ")
+}) 
+
+
+	#读取输入的基因型数据
+
+#dmu_genotype_data_hmp =reactive({
+#if (is.null(input$dmu_genotype_data)) return(NULL) #如果没有上传数据，返回值为NULL。不能和req 同时发挥作用
+#if(input$dmu_genotype_data_type=="Hapmap"){
+#data.table::fread(input$dmu_genotype_data$datapath,data.table=F,header=T)
+#}else{return(NULL)}
+#})
+#
+#dmu_genotype_data_plink_ped =reactive({
+#if (is.null(input$dmu_genotype_data)) return(NULL) #如果没有上传数据，返回值为NULL。不能和req 同时发挥作用
+#if(input$dmu_genotype_data_type=="Plink"){
+#
+#if(input$dmu_genotype_data$size[1]>input$dmu_genotype_data$size[2]){
+#data.table::fread(input$dmu_genotype_data$datapath[1],data.table=F,header=F)
+#}else {data.table::fread(input$dmu_genotype_data$datapath[2],data.table=F,header=F)}
+#
+#}else{return(NULL)}
+#})
+#
+#dmu_genotype_data_plink_map =reactive({
+#if (is.null(input$dmu_genotype_data)) return(NULL) #如果没有上传数据，返回值为NULL。不能和req 同时发挥作用
+#if(input$dmu_genotype_data_type=="Plink"){
+#if(input$dmu_genotype_data$size[1]>input$dmu_genotype_data$size[2]){
+#data.table::fread(input$dmu_genotype_data$datapath[2],data.table=F,header=F)
+#}else {data.table::fread(input$dmu_genotype_data$datapath[1],data.table=F,header=F)}
+#
+#}else{return(NULL)}
+#})
+#
+#dmu_genotype_data_genumeric =reactive({
+#if (is.null(input$dmu_genotype_data)) return(NULL) #如果没有上传数据，返回值为NULL。不能和req 同时发挥作用
+#if(input$dmu_genotype_data_type=="Numeric"){
+#data.table::fread(input$dmu_genotype_data$datapath,data.table=F,header=F)
+#}else{return(NULL)}
+#}) 
+#
+#dmu_genotype_data_blupf90 =reactive({
+#if (is.null(input$dmu_genotype_data)) return(NULL) #如果没有上传数据，返回值为NULL。不能和req 同时发挥作用
+#if(input$dmu_genotype_data_type=="Blupf90"){
+#data.table::fread(input$dmu_genotype_data$datapath,data.table=F,header=F,colClasses="character")
+#}else{return(NULL)}
+#}) 
+# 
+# 
+#	#生成动态输入界面
+output$run_dmu_dynamic <- renderUI({
+  fluidRow(
+    lapply(1:input$dmu_trait_n, function(a) {  #创建多个box
+     box(title = paste0("Trait ", a),width = 4,
+		background = "lightblue",		
+		map(trait_effect, ~ selectInput(paste0(.x,a,"_run_dmu"), .x,choices=colnames(dmu_phe()),multiple = TRUE,
+		                                       selected= isolate(input[[.x]])))  #每个box创建4个文本输入
+		#map(trait_effect, ~ textInput(.x, .x, value = isolate(input[[.x]]))) 创建 text速度会更快
+ 		
+	  )})
+	)	
+  })  
+
+
+
+observeEvent(input$run_dmu_button,{
+
+
+
+run_dmu_trait_name=input[[paste0(trait_effect[1],1,"_run_dmu")]]
+run_dmu_fixed_effect_name=list(input[[paste0(trait_effect[2],1,"_run_dmu")]])
+run_dmu_random_effect_name=list(input[[paste0(trait_effect[3],1,"_run_dmu")]])
+run_dmu_covariate_effect_name=list(input[[paste0(trait_effect[4],1,"_run_dmu")]])
+
+if(input$dmu_trait_n>=2){
+for(i in 2:input$dmu_trait_n){
+run_dmu_trait_name=c(run_dmu_trait_name,input[[paste0(trait_effect[1],i,"_run_dmu")]])
+run_dmu_fixed_effect_name=c(run_dmu_fixed_effect_name,list(input[[paste0(trait_effect[2],i)]]))
+run_dmu_random_effect_name=c(run_dmu_random_effect_name,list(input[[paste0(trait_effect[3],i,"_run_dmu")]]))
+run_dmu_covariate_effect_name=c(run_dmu_covariate_effect_name,list(input[[paste0(trait_effect[4],i,"_run_dmu")]]))
+}
+}
+
+showModal(modalDialog("Start running DMU!", easyClose = TRUE))
+reset_sink()
+sink("test.log.txt",split=TRUE)
+message_path=getwd() 
+ 
+
+if(input$dmu_included_permanent_effect=="Yes"){
+input_dmu_included_permanent_effect=TRUE
+}else{
+input_dmu_included_permanent_effect=FALSE
+}
+
+if(input$dmu_included_dominance_effect=="Yes"){
+input_dmu_included_dominance_effect=TRUE
+}else{
+input_dmu_included_dominance_effect=FALSE
+}
+
+
+blupADC::run_DMU(phe_col_names=colnames(dmu_phe()),
+		           target_trait_name=run_dmu_trait_name,
+		           fixed_effect_name=run_dmu_fixed_effect_name, #列表
+		           random_effect_name=run_dmu_random_effect_name, #列表，不包括永久环境效应
+		           covariate_effect_name=run_dmu_covariate_effect_name, #列表
+		           phe_path=dmu_path,
+		           phe_name="phe.txt",
+		           analysis_model=input$dmu_analysis_model,
+		           genetic_effect_name=input$dmu_genetic_effect_name,
+		           included_permanent_effect=input_dmu_included_permanent_effect, 
+		           included_dominance_effect=input_dmu_included_dominance_effect,
+		           missing_value=input$dmu_missing_value,
+		           iteration_criteria=input$dmu_iteration_criteria,
+		           relationship_name="pedigree.txt",
+		           relationship_path=dmu_path,
+		           dmu_module=input$dmu_dmu_module,
+		           dmu_algorithm_code=input$dmu_dmu_algorithm_code,
+		           provided_prior_file_path=NULL,
+		           provided_prior_file_name=NULL,
+		           integer_n=input$dmu_integer_n,  #整型数目
+		           output_result_path=dmu_path,
+		           SSBLUP_omega=input$dmu_SSBLUP_omega
+			      )	
+				  
+showModal(modalDialog("Complete running DMU!", easyClose = TRUE))
+#console
+reset_sink()
+dmu_message=system(paste0("cat ",message_path,"/test.log.txt"),intern = TRUE)
+   output$run_dmu_console <- renderPrint({
+   
+     return(print(dmu_message))
+   })													
+file.remove("test.log.txt")
+
+
+output$run_dmu_dir_result<-renderDataTable({
+data.table::fread("colnames_corrected_phe_dmu.txt",data.table=F)
+})
+
+
+
+
+#EBV
+output$download_ebv_dmu <- downloadHandler(
+    filename = function() {
+        "dmu_ebv.txt"
+    },
+    content = function(file) {
+     data.table::fwrite(data.table::fread("colnames_corrected_phe_dmu.txt",data.table=F),
+	                      file,quote=F,row.names=F,col.names=T,sep="\t")
+    }  
+)						
+						
+})
+
+
+
+###################################################################
+###                                                             ###
+###                                                             ###
+###  Run BLUPF90                                                ###
+###                                                             ###
+###                                                             ###
+###                                                             ###
+###################################################################
+blupf90_path=paste0(default_path,"/run_BLUPF90")
+if(!file.exists(blupf90_path))dir.create(blupf90_path,recursive=TRUE)
+
+run_blupf90_pedigree <- reactive({
+    req(input$run_blupf90_pedigree)  #直到上传文件，才会读取数据。 
+	data.table::fread(input$run_blupf90_pedigree$datapath,data.table=F)
+  }) 
+
+
+run_blupf90_phenotype <- reactive({
+    req(input$run_blupf90_phenotype)  #直到上传文件，才会读取数据。 
+	data.table::fread(input$run_blupf90_phenotype$datapath,data.table=F,header=T)
+  }) 
+
+
+observeEvent(input$run_blupf90_pedigree,{
+data.table::fwrite(run_blupf90_pedigree()[,1:3],paste0(blupf90_path,"/Blupf90_ped.txt"),quote=F,row.names=F,col.names=F,sep=" ")
+})
+
+observeEvent(input$run_blupf90_phenotype,{
+data.table::fwrite(run_blupf90_phenotype(),paste0(blupf90_path,"/Blupf90_phe.txt"),quote=F,row.names=F,col.names=F,sep=" ")
+})
+
+
+output$run_blupf90_given_prior_dynamic <- renderUI({
+
+if(input$run_blupf90_given_prior_logic=="YES"){
+fluidRow(
+box(
+  title = "Blupf90 parameter",# height=300,
+      closable = TRUE, 
+      width = 4,
+      status = "warning", 
+	 background = "olive",
+      solidHeader = FALSE, 
+      collapsible = TRUE, #可以折叠或者显示
+	selectInput("run_blupf90_given_prior_effect_name","PRIOR effect name",choices=c(colnames(run_blupf90_phenotype()),"Residual"),multiple=TRUE),
+	fileInput("run_blupf90_given_prior_file","Upload random effect prior data!"))
+	)
+}
+})
+
+run_blupf90_given_prior <- reactive({
+
+if (is.null(input$run_blupf90_given_prior_file)) return(NULL) #如果没有上传数据，返回值为NULL。不能和req 同时发挥作用
+    data.table::fread(input$run_blupf90_given_prior_file$datapath,data.table=F,header=FALSE)
+    
+  })
+
+run_blupf90_given_prior_effect_name<-reactive({
+if (is.null(input$run_blupf90_given_prior_effect_name)) return(NULL) #如果没有上传数据，返回值为NULL。不能和req 同时发挥作用
+
+input$run_blupf90_given_prior_effect_name
+
+})
+
+
+output$run_blupf90_dynamic <- renderUI({
+  fluidRow(
+    lapply(1:input$run_blupf90_trait_n, function(a) {  #创建多个box
+     box(title = paste0("Trait ", a),width = 4,
+		background = "lightblue",		
+		map(trait_effect, ~ selectInput(paste0(.x,a,"_run_blupf90"), .x,choices=colnames(run_blupf90_phenotype()),multiple = TRUE,
+		                                       selected= isolate(input[[.x]])))  #每个box创建4个文本输入
+		#map(trait_effect, ~ textInput(.x, .x, value = isolate(input[[.x]]))) 创建 text速度会更快
+ 		
+	  )})
+	)	
+  })  
+
+
+observeEvent(input$run_blupf90_Button,{
+
+
+run_blupf90_trait_name=input[[paste0(trait_effect[1],1,"_run_blupf90")]]
+run_blupf90_fixed_effect_name=list(input[[paste0(trait_effect[2],1,"_run_blupf90")]])
+run_blupf90_random_effect_name=list(input[[paste0(trait_effect[3],1,"_run_blupf90")]])
+run_blupf90_covariate_effect_name=list(input[[paste0(trait_effect[4],1,"_run_blupf90")]])
+
+
+if(input$run_blupf90_trait_n>=2){
+for(i in 2:input$run_blupf90_trait_n){
+run_blupf90_trait_name=c(run_blupf90_trait_name,input[[paste0(trait_effect[1],i,"_run_blupf90")]])
+run_blupf90_fixed_effect_name=c(run_blupf90_fixed_effect_name,list(input[[paste0(trait_effect[2],i)]]))
+run_blupf90_random_effect_name=c(run_blupf90_random_effect_name,list(input[[paste0(trait_effect[3],i,"_run_blupf90")]]))
+run_blupf90_covariate_effect_name=c(run_blupf90_covariate_effect_name,list(input[[paste0(trait_effect[4],i,"_run_blupf90")]]))
+}
+}
+
+showModal(modalDialog("Start running BLUPf90!", easyClose = TRUE))
+reset_sink()
+sink("test.log.txt",split=TRUE)
+message_path=getwd() 
+ 
+
+if(input$blupf90_included_permanent_effect=="Yes"){
+input_blupf90_included_permanent_effect=TRUE
+}else{
+input_blupf90_included_permanent_effect=FALSE
+}
+
+if(input$blupf90_included_dominance_effect=="Yes"){
+input_blupf90_included_dominance_effect=TRUE
+}else{
+input_blupf90_included_dominance_effect=FALSE
+}
+
+               blupADC::run_BLUPF90(		
+			    phe_col_names=colnames(run_blupf90_phenotype()),
+			    target_trait_name=run_blupf90_trait_name,
+			    fixed_effect_name=run_blupf90_fixed_effect_name, #列表
+			    random_effect_name=run_blupf90_random_effect_name, #列表，不包括永久环境效应
+			    covariate_effect_name=run_blupf90_covariate_effect_name, #列表
+			    phe_name="Blupf90_phe.txt",
+			    phe_path=blupf90_path,
+			    relationship_name="Blupf90_ped.txt",
+				relationship_path=blupf90_path,
+			    analysis_model=input$run_blupf90_method,
+				BLUPF90_algorithm=input$run_blupf90_algorithm,
+			    genetic_effect_name=input$blupf90_genetic_effect_name,
+				missing_value=input$blupf90_missing_value,
+			    included_permanent_effect=input_blupf90_included_permanent_effect,
+				output_result_path=blupf90_path
+								   )			
+
+showModal(modalDialog("Complete running BLUPF90!", easyClose = TRUE))
+#console
+reset_sink()
+dmu_message=system(paste0("cat ",message_path,"/test.log.txt"),intern = TRUE)
+   output$run_dmu_console <- renderPrint({
+   
+     return(print(dmu_message))
+   })													
+file.remove("test.log.txt")
+
+								   
+output$run_blupf90_result<- renderDataTable({
+data.table::fread("colnames_corrected_phe_BLUPF90.txt",data.table=F)
+  }) 
+
+#EBV
+output$download_ebv_blupf90 <- downloadHandler(
+    filename = function() {
+        "blupf90_ebv.txt"
+    },
+    content = function(file) {
+     data.table::fwrite(data.table::fread("colnames_corrected_phe_BLUPF90.txt",data.table=F),
+	                      file,quote=F,row.names=F,col.names=T,sep="\t")
+    }  
+)
+
+
+})
+
+
+
+
+
+
+
  
     useAutoColor()
 
